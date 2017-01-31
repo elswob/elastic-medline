@@ -1,0 +1,64 @@
+PUT _template/pubmed
+{
+  "tte": "pubmed-*",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "_default_": {
+      "dynamic_templates": [
+        {
+          "string_fields": {
+            "mapping": {
+              "index": "not_analyzed",
+              "omit_norms": true,
+              "type": "string",
+              "doc_values": true
+            },
+            "match_mapping_type": "string",
+            "match": "*"
+          }
+        }
+      ],
+      "_all": {
+        "enabled": false
+      },
+      "properties": {
+        "pmid": { "type": "integer" },
+        "issn": { "type": "string","index" : "not_analyzed" }
+      }
+    }
+  }
+}emplate": "pubmed-*",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "_default_": {
+      "dynamic_templates": [
+        {
+          "string_fields": {
+            "mapping": {
+              "index": "not_analyzed",
+              "omit_norms": true,
+              "type": "string",
+              "doc_values": true
+            },
+            "match_mapping_type": "string",
+            "match": "*"
+          }
+        }
+      ],
+      "_all": {
+        "enabled": false
+      },
+      "properties": {
+        "pmid": { "type": "integer" },
+        "issn": { "type": "string","index" : "not_analyzed" }
+        "dc": { "type": "string","index" : "not_analyzed" }
+      }
+    }
+  }
+}
