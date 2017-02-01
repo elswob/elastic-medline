@@ -26,8 +26,12 @@ PUT _template/pubmed
       },
       "properties": {
         "pmid": { "type": "integer" },
+        "date_created": { "type": "date" ,"format": "yyyy-MM-dd"},
+        "date_revised": { "type": "date" ,"format": "yyyy-MM-dd"},
         "issn": { "type": "string","index" : "not_analyzed" },
-        "date_created": { "type": "date" ,"format": "yyyy-MM-dd"}
+        "journal_title": { "type": "string","index" : "not_analyzed" },
+        "journal_iso": { "type": "string","index" : "not_analyzed" },
+        "article_title": { "type": "string","index" : "analyzed" }
       }
     }
   }
