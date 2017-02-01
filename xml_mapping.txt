@@ -1,6 +1,7 @@
-PUT _template/pubmed
+#curl -XPUT http://localhost:9200/pubmed -d '
+'
 {
-  "tte": "pubmed-*",
+  "template": "pubmed-*",
   "settings": {
     "number_of_shards": 1,
     "number_of_replicas": 0
@@ -31,8 +32,10 @@ PUT _template/pubmed
         "issn": { "type": "string","index" : "not_analyzed" },
         "journal_title": { "type": "string","index" : "not_analyzed" },
         "journal_iso": { "type": "string","index" : "not_analyzed" },
-        "article_title": { "type": "string","index" : "analyzed" }
+        "article_title": { "type": "string","index" : "analyzed" },
+        "abstract": { "type": "string","index" : "abstract" }
       }
     }
   }
 }
+'
