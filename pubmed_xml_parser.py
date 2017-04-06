@@ -4,6 +4,18 @@ from csv import reader
 
 dataDir = '/Users/be15516/projects/elastic-medline/'
 
+def parse_stream(_, xml_data):
+	#print xml_data
+	for p in xml_data['PubmedArticle']:
+		print p
+	return True
+
+def xml_stream():
+	for xml_file in os.listdir(dataDir+'xml/'):
+		print "### "+xml_file+" ###"
+		with open(dataDir+'/xml/'+xml_file, "rb") as f:
+			xmltodict.parse(f,item_depth=1,item_callback=parse_stream)
+
 def xml_to_json():
 	for xml_file in os.listdir(dataDir+'xml/'):
 		json_file = xml_file.replace('.xml','.json')
@@ -120,8 +132,9 @@ def parse_json():
 		#print json.dumps(mData)
 
 def main():
-	xml_to_json()
-	parse_json()
+	#xml_to_json()
+	#parse_json()
+	xml_stream()
 
 if __name__ == '__main__':
 	main()
