@@ -3,7 +3,7 @@ import xmltodict
 from xml_to_json import parse_xml
 from csv import reader
 
-dataDir = '/Users/be15516/projects/elastic-medline/'
+dataDir = '/Users/be15516/projects/elastic-medline/data/'
 
 mData = []
 counter=0
@@ -14,27 +14,29 @@ def parse_stream(_, xml_data):
 	for p in xml_data:
 		#print p
 		if p == 'MedlineCitation':
-			print counter
+			#print counter
 			if counter % 10000 == 0:
 				print counter
 			counter+=1
 			#for each publication
 			d = {}
 			medLineData = xml_data[p]
+			pmid = ''
 			if 'PMID' in medLineData:
 				print medLineData['PMID']['#text']
 				d['pmid']=medLineData['PMID']['#text']
+				pmid = d['pmid']=medLineData['PMID']['#text']
 			else:
 				print str(counter)+ " has no pmid"  # date created
 			if 'DateCreated' in medLineData:
 				d['DateCreated'] = medLineData['DateCreated']['Year'] + '-' + medLineData['DateCreated']['Month'] + '-' + medLineData['DateCreated']['Day']
 			else:
-				print str(counter) + " has no DateRevised"
+				print pmid+" : "+str(counter) + " has no DateRevised"
 			# date revised
 			if 'DateRevised' in medLineData:
 				d['DateRevised'] = medLineData['DateRevised']['Year'] + '-' + medLineData['DateRevised']['Month'] + '-' + medLineData['DateRevised']['Day']
 			else:
-				print str(counter) + " has no DateRevised"
+				print pmid+" : "+str(counter) + " has no DateRevised"
 
 			# article
 			if 'Article' in medLineData:
@@ -44,8 +46,38 @@ def parse_stream(_, xml_data):
 						d['issn'] = medLineData['Article']['Journal']['ISSN']['#text']
 					else:
 						print str(counter) + " has no ISSN"
+						d['issn'] = 'n/a'
+					if 'Title' in medLineData['Article']['Journal']:
+						d['JournalTitle'] = medLineData['Article']['Journal']['Title']
+					else:
+						d['JournalTitle'] = 'n/a'
+					if 'ISOAbbreviation' in medLineData['Article']['Journal']:
+						d['ISOAbbreviation'] = medLineData['Article']['Journal']['ISOAbbreviation']
+					else:
+						d['ISOAbbreviation'] = 'n/a'
+
+				#abstract
+				if 'Abstract' in medLineData['Article']:
+					if 'AbstractText' in medLineData['Article']['Abstract']:
+							if medLineData['Article']['Abstract'] == 'AbstractText':
+								d['Abstract'] = medLineData['Article']['Abstract']['AbstractText']
+							else:
+								d['Abstract']=''
+								for a in medLineData['Article']['Abstract']:
+									print a
+									if a == 'AbstractText':
+										if type(medLineData['Article']['Abstract'][a]) is list:
+											for text in medLineData['Article']['Abstract'][a]:
+												if '#text' in text:
+													d['Abstract'] += text['#text']
+										else:
+											d['Abstract'] = medLineData['Article']['Abstract'][a]
+				elif 'OtherAbstract' in medLineData:
+					d['Abstract'] = medLineData['OtherAbstract']['AbstractText']
+				else:
+					print pmid+" : "+str(counter) + " has no Abstract"
 			else:
-				print str(counter) + " has no Article"
+				print pmid+" : "+str(counter) + " has no Article"
 
 			# mesh
 			if 'MeshHeadingList' in medLineData:
@@ -109,8 +141,9 @@ def xml_stream():
 				print xml_file+" already parsed"
 			else:
 				print "### "+xml_file+" ###"
+				#item_depth is key, needs to be 2 for xml dowmloads form pubmed, 3 for output from my entrez-direct script
 				with gzip.open(dataDir+'/xml/'+xml_file, "rb") as f:
-					xmltodict.parse(f,item_depth=3,item_callback=parse_stream)
+					xmltodict.parse(f,item_depth=2,item_callback=parse_stream)
 
 				counter=0
 				w = gzip.open(dataDir+'/elastic-json/'+json_file,'w')
@@ -121,7 +154,6 @@ def xml_stream():
 						w.write('{ "index" : { "_index" : "pubmed-index", "_type" : "type1", "_id" : "'+str(counter)+'" } }\n')
 						w.write(json.dumps(m)+'\n')
 				mData = []
-				#xmltodict.parse(gzip.GzipFile(xml_file),item_depth=1, item_callback=parse_stream)
 
 
 def xml_to_json():
@@ -136,108 +168,6 @@ def xml_to_json():
 				doc = xmltodict.parse(fd.read())
 				w.write(json.dumps(doc))
 				#print json.dumps(doc)
-
-# def parse_json():
-# 	for json_file in os.listdir(dataDir+'json/'):
-# 		counter=0
-# 		if os.path.exists(dataDir+'/elastic-json/'+json_file):
-# 			print 'Elastic JSON file '+json_file+' already created'
-# 		else:
-# 			print '#### Parsing '+json_file+' ####'
-# 			with open(dataDir+'/json/'+json_file) as data_file:
-# 				json_data = json.load(data_file)
-# 			mData = []
-# 			#for each publication
-# 			d = {}
-# 			for p in json_data['PubmedArticleSet']['PubmedArticle']:
-# 				counter+=1
-# 				#parse medline data
-# 				if 'MedlineCitation' in p:
-# 					#check for single article files
-# 					if p == 'MedlineCitation':
-# 						medLineData = json_data['PubmedArticleSet']['PubmedArticle']['MedlineCitation']
-# 					else:
-# 						medLineData = p['MedlineCitation']
-# 					#pubmed ID
-# 					if 'PMID' in medLineData:
-# 						print medLineData['PMID']['#text']
-# 						d['pmid']=medLineData['PMID']['#text']
-# 					else:
-# 						print json_file+' : '+str(counter)+ " has no pmid"
-# 					#date created
-# 					if 'DateCreated' in medLineData:
-# 						d['DateCreated']=medLineData['DateCreated']['Year']+'-'+medLineData['DateCreated']['Month']+'-'+medLineData['DateCreated']['Day']
-# 					else:
-# 						print json_file+' : '+str(counter)+ " has no DateRevised"
-# 					#date revised
-# 					if 'DateRevised' in medLineData:
-# 						d['DateRevised']=medLineData['DateRevised']['Year']+'-'+medLineData['DateRevised']['Month']+'-'+medLineData['DateRevised']['Day']
-# 					else:
-# 						print json_file+' : '+str(counter)+ " has no DateRevised"
-# 					#article
-# 					if 'Article' in medLineData:
-# 						d['ArticleTitle']=medLineData['Article']['ArticleTitle']
-# 					else:
-# 						print json_file+' : '+str(counter)+ " has no Article"
-# 					#mesh
-# 					if 'MeshHeadingList' in medLineData:
-# 						meshList = []
-# 						meshData = medLineData['MeshHeadingList']['MeshHeading']
-# 						if type(meshData) is list:
-# 							for mesh in meshData:
-# 								descriptor = mesh['DescriptorName']['#text']
-# 								if mesh['DescriptorName']['@MajorTopicYN'] == 'Y':
-# 									print mesh
-# 									meshList.append(mesh['DescriptorName']['#text'])
-# 								if 'QualifierName' in mesh:
-# 									if type(mesh['QualifierName']) is list:
-# 										for q in mesh['QualifierName']:
-# 											if q['@MajorTopicYN'] == 'Y':
-# 												#print mesh
-# 												print descriptor+'/'+q['#text']
-# 												meshList.append(descriptor+'/'+q['#text'])
-# 									elif type(mesh['QualifierName']) is dict:
-# 										if mesh['QualifierName']['@MajorTopicYN'] == 'Y':
-# 											#print mesh
-# 											print descriptor+'/'+mesh['QualifierName']['#text']
-# 											meshList.append(descriptor+'/'+mesh['QualifierName']['#text'])
-#
-# 						elif type(meshData) is dict:
-# 							descriptor = meshData['DescriptorName']['#text']
-# 							if meshData['DescriptorName']['@MajorTopicYN'] == 'Y':
-# 								print mesh
-# 								meshList.append(meshData['DescriptorName']['#text'])
-# 							if 'QualifierName' in mesh:
-# 								if type(mesh['QualifierName']) is list:
-# 									for q in mesh['QualifierName']:
-# 										if q['@MajorTopicYN'] == 'Y':
-# 											#print mesh
-# 											print descriptor+'/'+q['#text']
-# 											meshList.append(descriptor+'/'+q['#text'])
-# 								elif type(mesh['QualifierName']) is dict:
-# 									if mesh['QualifierName']['@MajorTopicYN'] == 'Y':
-# 										#print mesh
-# 										print descriptor+'/'+mesh['QualifierName']['#text']
-# 										meshList.append(descriptor+'/'+mesh['QualifierName']['#text'])
-# 						d['Mesh'] = meshList
-# 					#	d['mesh'] = medLineData['MeshHeadingList']['MeshHeading']
-# 				else:
-# 					print str(counter)+" has no MedlineCitation"
-# 				#create new data set for new pubmed article
-# 				if len(p)==2:
-# 					mData.append(d)
-# 					d = {}
-# 			mData.append(d)
-# 			w = open(dataDir+'/elastic-json/'+json_file,'w')
-# 			#
-# 			counter=0
-# 			for m in mData:
-# 				if len(m)>1:
-# 					counter+=1
-# 					print m
-# 					w.write('{ "index" : { "_index" : "pubmed-index", "_type" : "type1", "_id" : "'+str(counter)+'" } }\n')
-# 					w.write(json.dumps(m)+'\n')
-# 		#print json.dumps(mData)
 
 
 if __name__ == '__main__':
