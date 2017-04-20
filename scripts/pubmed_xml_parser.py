@@ -15,7 +15,7 @@ def parse_stream(_, xml_data):
 		#print p
 		if p == 'MedlineCitation':
 			#print counter
-			if counter % 10000 == 0:
+			if counter % 1000 == 0:
 				print counter
 			counter+=1
 			#for each publication
@@ -23,7 +23,7 @@ def parse_stream(_, xml_data):
 			medLineData = xml_data[p]
 			pmid = ''
 			if 'PMID' in medLineData:
-				print medLineData['PMID']['#text']
+				#print medLineData['PMID']['#text']
 				d['pmid']=medLineData['PMID']['#text']
 				pmid = d['pmid']=medLineData['PMID']['#text']
 			else:
@@ -45,7 +45,7 @@ def parse_stream(_, xml_data):
 					if 'ISSN' in medLineData['Article']['Journal']:
 						d['issn'] = medLineData['Article']['Journal']['ISSN']['#text']
 					else:
-						print str(counter) + " has no ISSN"
+						#print str(counter) + " has no ISSN"
 						d['issn'] = 'n/a'
 					if 'Title' in medLineData['Article']['Journal']:
 						d['JournalTitle'] = medLineData['Article']['Journal']['Title']
@@ -64,7 +64,6 @@ def parse_stream(_, xml_data):
 							else:
 								d['Abstract']=''
 								for a in medLineData['Article']['Abstract']:
-									print a
 									if a == 'AbstractText':
 										if type(medLineData['Article']['Abstract'][a]) is list:
 											for text in medLineData['Article']['Abstract'][a]:
@@ -74,8 +73,8 @@ def parse_stream(_, xml_data):
 											d['Abstract'] = medLineData['Article']['Abstract'][a]
 				elif 'OtherAbstract' in medLineData:
 					d['Abstract'] = medLineData['OtherAbstract']['AbstractText']
-				else:
-					print pmid+" : "+str(counter) + " has no Abstract"
+				#else:
+					#print pmid+" : "+str(counter) + " has no Abstract"
 			else:
 				print pmid+" : "+str(counter) + " has no Article"
 
@@ -143,7 +142,7 @@ def xml_stream():
 				print "### "+xml_file+" ###"
 				#item_depth is key, needs to be 2 for xml dowmloads form pubmed, 3 for output from my entrez-direct script
 				with gzip.open(dataDir+'/xml/'+xml_file, "rb") as f:
-					xmltodict.parse(f,item_depth=2,item_callback=parse_stream)
+					xmltodict.parse(f,item_depth=3,item_callback=parse_stream)
 
 				counter=0
 				w = gzip.open(dataDir+'/elastic-json/'+json_file,'w')
@@ -151,7 +150,9 @@ def xml_stream():
 					if len(m)>1:
 						counter+=1
 						#print m
-						w.write('{ "index" : { "_index" : "pubmed-index", "_type" : "type1", "_id" : "'+str(counter)+'" } }\n')
+						#w.write('{ "index" : { "_index" : "pubmed-index", "_type" : "type1", "_id" : "'+str(counter)+'" } }\n')
+						#remove index name and type
+						w.write('{ "index" : { "_id" : "'+str(counter)+'" } }\n')
 						w.write(json.dumps(m)+'\n')
 				mData = []
 
